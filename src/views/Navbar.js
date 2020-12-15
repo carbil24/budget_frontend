@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Navbar } from "react-bootstrap";
+import UserContext from "../context/UserContext";
 
 export default function NavbarComponent() {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const { userData, setUserData } = useContext(UserContext);
   return (
     <Navbar collapseOnSelect expand="lg" bg="light" variant="light">
       <div className="container">
@@ -16,7 +17,7 @@ export default function NavbarComponent() {
                 Home
               </Link>
             </li>
-            {user ? (
+            {userData.user ? (
               <>
                 <li className="nav-item">
                   <NavLink className="nav-link" to="/myBudget">
@@ -37,7 +38,11 @@ export default function NavbarComponent() {
                   <NavLink
                     className="nav-link"
                     onClick={() => {
-                      localStorage.setItem("user", null);
+                      setUserData({
+                        token: undefined,
+                        user: undefined,
+                      });
+                      localStorage.setItem("x-access-token", "");
                     }}
                     to="/login"
                   >
@@ -61,10 +66,10 @@ export default function NavbarComponent() {
             )}
           </ul>
         </Navbar.Collapse>
-        {user ? (
+        {userData.user ? (
           <span className="nav nav-pills">
             <span className="nav-link">
-              {user.first_name} {user.last_name}
+              {userData.user.firstName} {userData.user.lastName}
             </span>
           </span>
         ) : null}

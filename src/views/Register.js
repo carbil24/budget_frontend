@@ -1,67 +1,58 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { Link, useHistory } from "react-router-dom";
 import { Dimmer, Loader } from "semantic-ui-react";
 
 import { useForm } from "react-hook-form";
+import Axios from "axios";
+import UserContext from "../context/UserContext";
 
-export default function Register({ users, setUsers, members, setMembers }) {
+export default function Register() {
   const { handleSubmit, register, errors, watch } = useForm();
   const history = useHistory();
   const [userExists, setUserExists] = useState();
   const [loading, setLoading] = useState(true);
 
+  const { setUserData } = useContext(UserContext);
+
   const password = useRef({});
   password.current = watch("password", "");
 
   const onSubmit = async (data) => {
-    let theUser = users.find((x) => x.email === data.email);
-    const timeElapsed = Date.now();
-    const today = new Date(timeElapsed);
-    if (!theUser) {
-      theUser = {
-        id: users[users.length - 1].id + 1,
-        first_name: data.first_name
-          .toLowerCase()
-          .split(" ")
-          .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
-          .join(" "),
-        last_name: data.last_name
-          .toLowerCase()
-          .split(" ")
-          .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
-          .join(" "),
-        email: data.email,
-        password: data.password,
-      };
-      setUsers([...users, theUser]);
+    const newUser = {
+      firstName: data.first_name
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
+        .join(" "),
+      lastName: data.last_name
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
+        .join(" "),
+      email: data.email,
+      password: data.password,
+    };
 
-      let theMember = members.find((x) => x.email === theUser.email);
-      if (!theMember) {
-        setMembers([
-          ...members,
-          {
-            id: members[members.length - 1].id + 1,
-            email: theUser.email,
-            name: theUser.first_name + " " + theUser.last_name,
-            created_at: today.toLocaleDateString(),
-          },
-        ]);
-      } else {
-        setMembers(
-          members.map((x) => {
-            if (x.email !== theUser.email) return x;
-            return {
-              ...x,
-              name: theUser.first_name + " " + theUser.last_name,
-            };
-          })
-        );
-      }
-      localStorage.setItem("user", JSON.stringify(theUser));
-      history.push("/");
-    } else {
-      setUserExists(true);
+    try {
+      await Axios.post("http://localhost:4000/api/auth/register", newUser);
+    } catch (err) {
+      if (err.response.data.message === "Email already exists")
+        setUserExists(true);
+      return;
     }
+
+    const loginRes = await Axios.post("http://localhost:4000/api/auth/login", {
+      email: newUser.email,
+      password: newUser.password,
+    });
+
+    setUserData({
+      token: loginRes.data.token,
+      user: loginRes.data.user,
+    });
+
+    localStorage.setItem("x-access-token", loginRes.data.token);
+    history.push("/");
   };
 
   useEffect(() => {
